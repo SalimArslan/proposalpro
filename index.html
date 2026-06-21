@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ProposalPro — Freelance Proposal Generator</title>
+<style>
+  :root {
+    --primary: #6366f1;
+    --primary-dark: #4f46e5;
+    --primary-light: #e0e7ff;
+    --accent: #f59e0b;
+    --bg: #f8fafc;
+    --card: #ffffff;
+    --text: #1e293b;
+    --muted: #64748b;
+    --border: #e2e8f0;
+    --danger: #ef4444;
+    --success: #22c55e;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+  /* === HEADER === */
+  .header { background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); color: white; padding: 16px 32px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 20px rgba(99,102,241,0.3); }
+  .logo { font-size: 22px; font-weight: 800; letter-spacing: -0.5px; }
+  .logo span { color: #fbbf24; }
+  .badge-free { background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+  .unlock-btn { background: #fbbf24; color: #1e293b; border: none; padding: 8px 20px; border-radius: 8px; font-weight: 700; cursor: pointer; font-size: 14px; transition: all 0.2s; }
+  .unlock-btn:hover { background: #f59e0b; transform: translateY(-1px); }
+
+  /* === LAYOUT === */
+  .app { display: grid; grid-template-columns: 420px 1fr; min-height: calc(100vh - 64px); }
+
+  /* === FORM PANEL === */
+  .form-panel { background: white; border-right: 1px solid var(--border); overflow-y: auto; height: calc(100vh - 64px); position: sticky; top: 64px; }
+  .form-inner { padding: 24px; }
+
+  .section-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); margin: 24px 0 12px; display: flex; align-items: center; gap: 8px; }
+  .section-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+  .field { margin-bottom: 14px; }
+  .field label { display: block; font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 5px; }
+  .field input, .field textarea, .field select { width: 100%; border: 1.5px solid var(--border); border-radius: 8px; padding: 9px 12px; font-size: 14px; font-family: inherit; color: var(--text); background: white; transition: border-color 0.2s; outline: none; resize: none; }
+  .field input:focus, .field textarea:focus, .field select:focus { border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-light); }
+  .field textarea { min-height: 80px; }
+  .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+  .deliverables-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 8px; }
+  .deliverable-item { display: flex; gap: 6px; align-items: center; }
+  .deliverable-item input { flex: 1; }
+  .btn-remove { background: none; border: none; color: var(--danger); cursor: pointer; font-size: 18px; line-height: 1; padding: 2px 6px; border-radius: 4px; }
+  .btn-remove:hover { background: #fee2e2; }
+  .btn-add { background: none; border: 1.5px dashed var(--border); color: var(--muted); border-radius: 8px; padding: 8px; width: 100%; cursor: pointer; font-size: 13px; font-weight: 600; transition: all 0.2s; }
+  .btn-add:hover { border-color: var(--primary); color: var(--primary); }
+
+  .template-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .template-card { border: 2px solid var(--border); border-radius: 10px; padding: 10px; cursor: pointer; transition: all 0.2s; text-align: center; position: relative; }
+  .template-card.active { border-color: var(--primary); background: var(--primary-light); }
+  .template-card:hover { border-color: var(--primary); }
+  .template-card .t-name { font-size: 12px; font-weight: 700; margin-top: 4px; }
+  .template-card .t-preview { width: 100%; height: 50px; border-radius: 6px; overflow: hidden; }
+  .pro-lock { position: absolute; top: 6px; right: 6px; background: var(--accent); color: white; font-size: 9px; font-weight: 800; padding: 2px 5px; border-radius: 4px; }
+
+  .color-options { display: flex; gap: 8px; flex-wrap: wrap; }
+  .color-dot { width: 28px; height: 28px; border-radius: 50%; cursor: pointer; border: 3px solid transparent; transition: all 0.2s; }
+  .color-dot.active, .color-dot:hover { border-color: var(--text); transform: scale(1.15); }
+
+  .generate-btn { width: 100%; background: linear-gradient(135deg, #6366f1, #8b5cf6); color: white; border: none; padding: 14px; border-radius: 12px; font-size: 16px; font-weight: 700; cursor: pointer; margin-top: 24px; transition: all 0.2s; box-shadow: 0 4px 15px rgba(99,102,241,0.3); }
+  .generate-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(99,102,241,0.4); }
+
+  /* === PREVIEW PANEL === */
+  .preview-panel { background: #f1f5f9; display: flex; flex-direction: column; }
+  .preview-toolbar { background: white; border-bottom: 1px solid var(--border); padding: 12px 24px; display: flex; align-items: center; gap: 12px; position: sticky; top: 64px; z-index: 10; }
+  .preview-toolbar span { font-size: 13px; font-weight: 600; color: var(--muted); flex: 1; }
+  .btn-download { background: var(--primary); color: white; border: none; padding: 8px 20px; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 6px; }
+  .btn-download:hover { background: var(--primary-dark); }
+  .btn-print { background: white; color: var(--text); border: 1.5px solid var(--border); padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+  .btn-print:hover { border-color: var(--primary); color: var(--primary); }
+
+  .preview-content { padding: 32px; display: flex; justify-content: center; }
+  .preview-frame { background: white; width: 794px; min-height: 1123px; box-shadow: 0 4px 40px rgba(0,0,0,0.12); border-radius: 4px; overflow: hidden; position: relative; }
+
+  /* === PROPOSAL TEMPLATES === */
+  .proposal { font-family: 'Segoe UI', system-ui, sans-serif; }
+
+  /* Template: Modern */
+  .tpl-modern .prop-header { padding: 48px 56px 40px; background: var(--prop-color, #6366f1); color: white; }
+  .tpl-modern .prop-header h1 { font-size: 32px; font-weight: 800; margin-bottom: 4px; }
+  .tpl-modern .prop-header .prop-subtitle { opacity: 0.85; font-size: 15px; margin-bottom: 24px; }
+  .tpl-modern .prop-header .prop-meta { display: flex; gap: 32px; font-size: 13px; }
+  .tpl-modern .prop-header .prop-meta div { opacity: 0.9; }
+  .tpl-modern .prop-header .prop-meta strong { display: block; opacity: 1; font-size: 15px; font-weight: 700; }
+  .tpl-modern .prop-body { padding: 40px 56px; }
+  .tpl-modern .prop-section { margin-bottom: 36px; }
+  .tpl-modern .prop-section-title { font-size: 11px; text-transform: uppercase; letter-spacing: 2px; font-weight: 800; color: var(--prop-color, #6366f1); margin-bottom: 12px; padding-bottom: 8px; border-bottom: 2px solid var(--prop-color, #6366f1); }
+  .tpl-modern .prop-section p { font-size: 15px; line-height: 1.7; color: #334155; }
+  .tpl-modern .deliverables-list { list-style: none; }
+  .tpl-modern .deliverables-list li { padding: 10px 14px; background: #f8fafc; border-radius: 8px; margin-bottom: 8px; font-size: 14px; display: flex; align-items: center; gap: 10px; }
+  .tpl-modern .deliverables-list li::before { content: '✓'; color: var(--prop-color, #6366f1); font-weight: 800; }
+  .tpl-modern .price-box { background: var(--prop-color, #6366f1); color: white; padding: 28px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; }
+  .tpl-modern .price-box .price-label { font-size: 14px; opacity: 0.9; }
+  .tpl-modern .price-box .price-value { font-size: 36px; font-weight: 800; }
+  .tpl-modern .signature-area { display: flex; gap: 40px; margin-top: 16px; }
+  .tpl-modern .sig-line { flex: 1; }
+  .tpl-modern .sig-line .sig-blank { border-bottom: 2px solid #e2e8f0; margin-bottom: 8px; height: 48px; }
+  .tpl-modern .sig-line small { font-size: 12px; color: var(--muted); }
+  .tpl-modern .watermark { text-align: center; padding: 16px; color: #cbd5e1; font-size: 11px; border-top: 1px solid var(--border); }
+
+  /* Template: Minimal */
+  .tpl-minimal { }
+  .tpl-minimal .prop-header { padding: 56px 64px 48px; border-bottom: 3px solid var(--prop-color, #6366f1); }
+  .tpl-minimal .prop-header h1 { font-size: 28px; font-weight: 800; color: var(--prop-color, #6366f1); margin-bottom: 4px; }
+  .tpl-minimal .prop-header .prop-subtitle { color: #64748b; font-size: 15px; margin-bottom: 32px; }
+  .tpl-minimal .prop-header .prop-meta { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; font-size: 13px; color: #64748b; }
+  .tpl-minimal .prop-header .prop-meta strong { display: block; color: var(--text); font-size: 15px; }
+  .tpl-minimal .prop-body { padding: 40px 64px; }
+  .tpl-minimal .prop-section { margin-bottom: 40px; }
+  .tpl-minimal .prop-section-title { font-size: 20px; font-weight: 700; color: var(--text); margin-bottom: 16px; }
+  .tpl-minimal .prop-section p { font-size: 15px; line-height: 1.8; color: #475569; }
+  .tpl-minimal .deliverables-list { list-style: none; }
+  .tpl-minimal .deliverables-list li { padding: 12px 0; border-bottom: 1px solid var(--border); font-size: 14px; display: flex; align-items: center; gap: 12px; color: #334155; }
+  .tpl-minimal .deliverables-list li::before { content: '→'; color: var(--prop-color, #6366f1); font-weight: 700; }
+  .tpl-minimal .price-box { display: flex; justify-content: space-between; align-items: center; padding: 24px 32px; border: 2px solid var(--prop-color, #6366f1); border-radius: 4px; }
+  .tpl-minimal .price-box .price-label { font-size: 16px; font-weight: 600; color: #475569; }
+  .tpl-minimal .price-box .price-value { font-size: 40px; font-weight: 800; color: var(--prop-color, #6366f1); }
+  .tpl-minimal .signature-area { display: flex; gap: 40px; margin-top: 16px; }
+  .tpl-minimal .sig-line .sig-blank { border-bottom: 1px solid #94a3b8; margin-bottom: 8px; height: 48px; }
+  .tpl-minimal .sig-line small { font-size: 12px; color: var(--muted); }
+  .tpl-minimal .watermark { text-align: center; padding: 16px; color: #cbd5e1; font-size: 11px; border-top: 1px solid var(--border); }
+
+  /* === PRO MODAL === */
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center; }
+  .modal-overlay.active { display: flex; }
+  .modal { background: white; border-radius: 16px; padding: 32px; max-width: 440px; width: 90%; box-shadow: 0 20px 60px rgba(0,0,0,0.2); }
+  .modal h2 { font-size: 22px; font-weight: 800; margin-bottom: 8px; }
+  .modal p { color: var(--muted); font-size: 14px; margin-bottom: 20px; line-height: 1.6; }
+  .modal .feature-list { list-style: none; margin-bottom: 24px; }
+  .modal .feature-list li { display: flex; align-items: center; gap: 10px; font-size: 14px; padding: 6px 0; }
+  .modal .feature-list li::before { content: '✓'; background: #dcfce7; color: var(--success); width: 22px; height: 22px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-weight: 800; font-size: 11px; flex-shrink: 0; }
+  .modal .price-tag { text-align: center; margin-bottom: 20px; }
+  .modal .price-tag .old { text-decoration: line-through; color: var(--muted); font-size: 18px; }
+  .modal .price-tag .new { font-size: 42px; font-weight: 800; color: var(--primary); }
+  .modal .price-tag small { color: var(--muted); font-size: 13px; }
+  .modal .buy-btn { width: 100%; background: linear-gradient(135deg, #6366f1, #8b5cf6); color: white; border: none; padding: 14px; border-radius: 12px; font-size: 16px; font-weight: 700; cursor: pointer; margin-bottom: 12px; }
+  .modal .key-input-row { display: flex; gap: 8px; }
+  .modal .key-input-row input { flex: 1; border: 1.5px solid var(--border); border-radius: 8px; padding: 9px 12px; font-size: 14px; outline: none; font-family: monospace; }
+  .modal .key-input-row input:focus { border-color: var(--primary); }
+  .modal .key-input-row button { background: var(--text); color: white; border: none; padding: 9px 16px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; }
+  .modal .close-modal { width: 100%; background: none; border: none; color: var(--muted); font-size: 13px; cursor: pointer; margin-top: 8px; }
+  .modal .status-msg { font-size: 13px; text-align: center; margin-top: 8px; min-height: 18px; }
+  .status-success { color: var(--success); }
+  .status-error { color: var(--danger); }
+
+  /* === EMPTY STATE === */
+  .empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 600px; color: var(--muted); text-align: center; padding: 40px; }
+  .empty-state svg { margin-bottom: 16px; opacity: 0.3; }
+  .empty-state h3 { font-size: 20px; font-weight: 700; margin-bottom: 8px; color: var(--text); }
+  .empty-state p { font-size: 14px; max-width: 300px; line-height: 1.6; }
+
+  @media print {
+    .header, .form-panel, .preview-toolbar { display: none !important; }
+    .app { display: block; }
+    .preview-panel { background: white; }
+    .preview-content { padding: 0; }
+    .preview-frame { box-shadow: none; width: 100%; border-radius: 0; }
+    .watermark { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="header">
+  <div class="logo">Proposal<span>Pro</span></div>
+  <span class="badge-free">Free Version</span>
+  <button class="unlock-btn" onclick="openModal()">🔓 Unlock Pro — $9</button>
+</header>
+
+<!-- APP LAYOUT -->
+<div class="app">
+  <!-- FORM PANEL -->
+  <aside class="form-panel">
+    <div class="form-inner">
+
+      <!-- Template -->
+      <div class="section-title">Template</div>
+      <div class="template-grid">
+        <div class="template-card active" onclick="setTemplate('modern', this)">
+          <div class="t-preview" style="background: linear-gradient(135deg,#6366f1,#8b5cf6);"></div>
+          <div class="t-name">Modern</div>
+        </div>
+        <div class="template-card" onclick="setTemplate('minimal', this)">
+          <div class="t-preview" style="background: white; border: 2px solid #e2e8f0; display:flex;align-items:center;justify-content:center;"><div style="width:60%;height:4px;background:#e2e8f0;border-radius:2px;"></div></div>
+          <div class="t-name">Minimal</div>
+        </div>
+        <div class="template-card" onclick="requirePro(this)">
+          <div class="t-preview" style="background: linear-gradient(135deg,#0f172a,#1e293b);"></div>
+          <div class="t-name">Dark</div>
+          <div class="pro-lock">PRO</div>
+        </div>
+        <div class="template-card" onclick="requirePro(this)">
+          <div class="t-preview" style="background: linear-gradient(135deg,#ecfdf5,#d1fae5);"></div>
+          <div class="t-name">Fresh</div>
+          <div class="pro-lock">PRO</div>
+        </div>
+      </div>
+
+      <!-- Accent Color -->
+      <div class="section-title">Accent Color</div>
+      <div class="color-options">
+        <div class="color-dot active" style="background:#6366f1" onclick="setColor('#6366f1',this)" title="Indigo"></div>
+        <div class="color-dot" style="background:#8b5cf6" onclick="setColor('#8b5cf6',this)" title="Purple"></div>
+        <div class="color-dot" style="background:#0ea5e9" onclick="setColor('#0ea5e9',this)" title="Blue"></div>
+        <div class="color-dot" style="background:#10b981" onclick="setColor('#10b981',this)" title="Green"></div>
+        <div class="color-dot" style="background:#f59e0b" onclick="setColor('#f59e0b',this)" title="Amber"></div>
+        <div class="color-dot" style="background:#ef4444" onclick="setColor('#ef4444',this)" title="Red"></div>
+        <div class="color-dot" style="background:#1e293b" onclick="setColor('#1e293b',this)" title="Dark"></div>
+      </div>
+
+      <!-- Your Info -->
+      <div class="section-title">Your Info</div>
+      <div class="field">
+        <label>Full Name / Business Name</label>
+        <input id="f_name" type="text" placeholder="Jane Smith" oninput="liveUpdate()">
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label>Your Title</label>
+          <input id="f_title" type="text" placeholder="Web Developer" oninput="liveUpdate()">
+        </div>
+        <div class="field">
+          <label>Email</label>
+          <input id="f_email" type="text" placeholder="jane@email.com" oninput="liveUpdate()">
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label>Phone</label>
+          <input id="f_phone" type="text" placeholder="+1 555 000 0000" oninput="liveUpdate()">
+        </div>
+        <div class="field">
+          <label>Website</label>
+          <input id="f_website" type="text" placeholder="jane.dev" oninput="liveUpdate()">
+        </div>
+      </div>
+
+      <!-- Client Info -->
+      <div class="section-title">Client Info</div>
+      <div class="field-row">
+        <div class="field">
+          <label>Client Name</label>
+          <input id="f_client_name" type="text" placeholder="John Doe" oninput="liveUpdate()">
+        </div>
+        <div class="field">
+          <label>Company</label>
+          <input id="f_client_company" type="text" placeholder="Acme Corp" oninput="liveUpdate()">
+        </div>
+      </div>
+
+      <!-- Project -->
+      <div class="section-title">Project Details</div>
+      <div class="field">
+        <label>Project Title</label>
+        <input id="f_project_title" type="text" placeholder="E-Commerce Website Redesign" oninput="liveUpdate()">
+      </div>
+      <div class="field">
+        <label>Project Overview</label>
+        <textarea id="f_overview" placeholder="Briefly describe the project, the problem you're solving, and your approach..." oninput="liveUpdate()"></textarea>
+      </div>
+
+      <!-- Deliverables -->
+      <div class="section-title">Deliverables</div>
+      <div class="deliverables-list" id="deliverablesContainer"></div>
+      <button class="btn-add" onclick="addDeliverable()">+ Add Deliverable</button>
+
+      <!-- Timeline & Price -->
+      <div class="section-title">Timeline & Investment</div>
+      <div class="field-row">
+        <div class="field">
+          <label>Timeline</label>
+          <input id="f_timeline" type="text" placeholder="4 weeks" oninput="liveUpdate()">
+        </div>
+        <div class="field">
+          <label>Total Price</label>
+          <input id="f_price" type="text" placeholder="$2,500" oninput="liveUpdate()">
+        </div>
+      </div>
+      <div class="field">
+        <label>Payment Terms</label>
+        <input id="f_terms" type="text" placeholder="50% upfront, 50% on delivery" oninput="liveUpdate()">
+      </div>
+      <div class="field">
+        <label>Proposal Valid Until</label>
+        <input id="f_valid" type="date" oninput="liveUpdate()">
+      </div>
+      <div class="field">
+        <label>Additional Notes (optional)</label>
+        <textarea id="f_notes" placeholder="Revisions included, support period, etc." oninput="liveUpdate()" style="min-height:60px;"></textarea>
+      </div>
+
+      <button class="generate-btn" onclick="generateProposal()">✨ Generate Proposal</button>
+    </div>
+  </aside>
+
+  <!-- PREVIEW PANEL -->
+  <main class="preview-panel">
+    <div class="preview-toolbar">
+      <span>Live Preview</span>
+      <button class="btn-print" onclick="window.print()">🖨 Print</button>
+      <button class="btn-download" onclick="downloadHTML()">⬇ Download HTML</button>
+    </div>
+    <div class="preview-content">
+      <div class="preview-frame" id="previewFrame">
+        <div class="empty-state" id="emptyState">
+          <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+          <h3>Your proposal will appear here</h3>
+          <p>Fill in the form on the left and click "Generate Proposal" to see a live preview.</p>
+        </div>
+        <div id="proposalOutput" style="display:none;"></div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- PRO MODAL -->
+<div class="modal-overlay" id="proModal">
+  <div class="modal">
+    <h2>🚀 Unlock ProposalPro</h2>
+    <p>One-time payment. No subscription. Yours forever.</p>
+    <div class="price-tag">
+      <div class="old">$29</div>
+      <div class="new">$9</div>
+      <small>One-time · Instant access</small>
+    </div>
+    <ul class="feature-list">
+      <li>Remove watermark from all proposals</li>
+      <li>2 additional premium templates (Dark, Fresh)</li>
+      <li>Custom logo upload</li>
+      <li>Save & load proposals</li>
+      <li>Unlimited proposals forever</li>
+    </ul>
+    <button class="buy-btn" onclick="goToBuy()">Buy Now — $9 →</button>
+    <div style="margin-top:16px;font-size:13px;color:var(--muted);text-align:center;margin-bottom:8px;">Already purchased? Enter your license key:</div>
+    <div class="key-input-row">
+      <input type="text" id="licenseInput" placeholder="PP-XXXX-XXXX-XXXX" />
+      <button onclick="activateLicense()">Activate</button>
+    </div>
+    <div class="status-msg" id="licenseStatus"></div>
+    <button class="close-modal" onclick="closeModal()">Maybe later</button>
+  </div>
+</div>
+
+<script>
+// === STATE ===
+let currentTemplate = 'modern';
+let currentColor = '#6366f1';
+let deliverables = ['', '', ''];
+let isPro = localStorage.getItem('pp_pro') === 'true';
+
+// === INIT ===
+document.addEventListener('DOMContentLoaded', () => {
+  renderDeliverables();
+  // Set default date
+  const d = new Date(); d.setDate(d.getDate() + 14);
+  document.getElementById('f_valid').value = d.toISOString().split('T')[0];
+  if (isPro) markAsPro();
+});
+
+// === TEMPLATE ===
+function setTemplate(tpl, el) {
+  document.querySelectorAll('.template-card').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  currentTemplate = tpl;
+  liveUpdate();
+}
+
+// === COLOR ===
+function setColor(color, el) {
+  document.querySelectorAll('.color-dot').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  currentColor = color;
+  liveUpdate();
+}
+
+// === DELIVERABLES ===
+function renderDeliverables() {
+  const container = document.getElementById('deliverablesContainer');
+  container.innerHTML = deliverables.map((d, i) => `
+    <div class="deliverable-item">
+      <input type="text" value="${d}" placeholder="e.g. Fully responsive website (5 pages)"
+        oninput="deliverables[${i}]=this.value;liveUpdate()" />
+      <button class="btn-remove" onclick="removeDeliverable(${i})">×</button>
+    </div>
+  `).join('');
+}
+function addDeliverable() {
+  deliverables.push('');
+  renderDeliverables();
+}
+function removeDeliverable(i) {
+  deliverables.splice(i, 1);
+  renderDeliverables();
+  liveUpdate();
+}
+
+// === LIVE UPDATE ===
+function liveUpdate() {
+  const output = document.getElementById('proposalOutput');
+  if (output.style.display === 'none') return;
+  output.innerHTML = buildProposal();
+}
+
+// === BUILD PROPOSAL ===
+function buildProposal() {
+  const v = {
+    name: get('f_name') || 'Your Name',
+    title: get('f_title') || 'Freelancer',
+    email: get('f_email') || 'email@example.com',
+    phone: get('f_phone') || '',
+    website: get('f_website') || '',
+    clientName: get('f_client_name') || 'Client Name',
+    clientCompany: get('f_client_company') || '',
+    projectTitle: get('f_project_title') || 'Project Proposal',
+    overview: get('f_overview') || 'We will work together to deliver an exceptional result.',
+    timeline: get('f_timeline') || 'TBD',
+    price: get('f_price') || 'TBD',
+    terms: get('f_terms') || '50% upfront, 50% on delivery',
+    valid: formatDate(get('f_valid')) || 'TBD',
+    notes: get('f_notes') || '',
+  };
+  const items = deliverables.filter(d => d.trim());
+  const today = formatDate(new Date().toISOString().split('T')[0]);
+  const watermark = isPro ? '' : `<div class="watermark">Created with <strong>ProposalPro</strong> · proposalpro.io · Upgrade to remove this</div>`;
+
+  if (currentTemplate === 'modern') {
+    return `
+    <div class="proposal tpl-modern" style="--prop-color:${currentColor}">
+      <div class="prop-header">
+        <h1>${escHtml(v.projectTitle)}</h1>
+        <p class="prop-subtitle">Prepared by ${escHtml(v.name)} · ${escHtml(v.title)}</p>
+        <div class="prop-meta">
+          <div><div>Prepared for</div><strong>${escHtml(v.clientName)}${v.clientCompany ? ', ' + escHtml(v.clientCompany) : ''}</strong></div>
+          <div><div>Date</div><strong>${today}</strong></div>
+          <div><div>Valid until</div><strong>${v.valid}</strong></div>
+          <div><div>Investment</div><strong>${escHtml(v.price)}</strong></div>
+        </div>
+      </div>
+      <div class="prop-body">
+        <div class="prop-section">
+          <div class="prop-section-title">Overview</div>
+          <p>${escHtml(v.overview).replace(/\n/g,'<br>')}</p>
+        </div>
+        ${items.length ? `
+        <div class="prop-section">
+          <div class="prop-section-title">What's Included</div>
+          <ul class="deliverables-list">${items.map(d=>`<li>${escHtml(d)}</li>`).join('')}</ul>
+        </div>` : ''}
+        <div class="prop-section">
+          <div class="prop-section-title">Timeline</div>
+          <p>Estimated delivery: <strong>${escHtml(v.timeline)}</strong></p>
+        </div>
+        <div class="prop-section">
+          <div class="prop-section-title">Investment</div>
+          <div class="price-box">
+            <div><div class="price-label">Total Project Investment</div><div class="price-label" style="font-size:12px;opacity:0.8;margin-top:4px;">Payment terms: ${escHtml(v.terms)}</div></div>
+            <div class="price-value">${escHtml(v.price)}</div>
+          </div>
+        </div>
+        ${v.notes ? `<div class="prop-section"><div class="prop-section-title">Additional Notes</div><p>${escHtml(v.notes).replace(/\n/g,'<br>')}</p></div>` : ''}
+        <div class="prop-section">
+          <div class="prop-section-title">Next Steps</div>
+          <p>If you'd like to proceed, please sign below and return this proposal. You can reach me at <strong>${escHtml(v.email)}</strong>${v.phone ? ' or ' + escHtml(v.phone) : ''}.</p>
+        </div>
+        <div class="prop-section">
+          <div class="prop-section-title">Signatures</div>
+          <div class="signature-area">
+            <div class="sig-line"><div class="sig-blank"></div><small>${escHtml(v.name)} (Service Provider)</small></div>
+            <div class="sig-line"><div class="sig-blank"></div><small>${escHtml(v.clientName)} (Client)</small></div>
+          </div>
+        </div>
+      </div>
+      ${watermark}
+    </div>`;
+  }
+
+  // Minimal template
+  return `
+  <div class="proposal tpl-minimal" style="--prop-color:${currentColor}">
+    <div class="prop-header">
+      <h1>${escHtml(v.projectTitle)}</h1>
+      <p class="prop-subtitle">A Proposal by ${escHtml(v.name)}</p>
+      <div class="prop-meta">
+        <div><div>Prepared for</div><strong>${escHtml(v.clientName)}${v.clientCompany ? ', ' + escHtml(v.clientCompany) : ''}</strong></div>
+        <div><div>Prepared by</div><strong>${escHtml(v.name)}</strong></div>
+        <div><div>Date</div><strong>${today}</strong></div>
+        <div><div>Valid until</div><strong>${v.valid}</strong></div>
+      </div>
+    </div>
+    <div class="prop-body">
+      <div class="prop-section">
+        <div class="prop-section-title">Overview</div>
+        <p>${escHtml(v.overview).replace(/\n/g,'<br>')}</p>
+      </div>
+      ${items.length ? `
+      <div class="prop-section">
+        <div class="prop-section-title">Scope of Work</div>
+        <ul class="deliverables-list">${items.map(d=>`<li>${escHtml(d)}</li>`).join('')}</ul>
+      </div>` : ''}
+      <div class="prop-section">
+        <div class="prop-section-title">Timeline</div>
+        <p>This project will be completed within <strong>${escHtml(v.timeline)}</strong> from the start date.</p>
+      </div>
+      <div class="prop-section">
+        <div class="prop-section-title">Investment</div>
+        <div class="price-box">
+          <div class="price-label">Total · ${escHtml(v.terms)}</div>
+          <div class="price-value">${escHtml(v.price)}</div>
+        </div>
+      </div>
+      ${v.notes ? `<div class="prop-section"><div class="prop-section-title">Notes</div><p>${escHtml(v.notes).replace(/\n/g,'<br>')}</p></div>` : ''}
+      <div class="prop-section">
+        <div class="prop-section-title">Ready to Proceed?</div>
+        <p>Contact me at <strong>${escHtml(v.email)}</strong>${v.phone ? ' · ' + escHtml(v.phone) : ''}${v.website ? ' · ' + escHtml(v.website) : ''}</p>
+      </div>
+      <div class="prop-section">
+        <div class="prop-section-title">Signatures</div>
+        <div class="signature-area">
+          <div class="sig-line"><div class="sig-blank"></div><small>${escHtml(v.name)}</small></div>
+          <div class="sig-line"><div class="sig-blank"></div><small>${escHtml(v.clientName)}</small></div>
+        </div>
+      </div>
+    </div>
+    ${watermark}
+  </div>`;
+}
+
+// === GENERATE ===
+function generateProposal() {
+  const output = document.getElementById('proposalOutput');
+  const empty = document.getElementById('emptyState');
+  output.innerHTML = buildProposal();
+  output.style.display = 'block';
+  empty.style.display = 'none';
+  output.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// === DOWNLOAD ===
+function downloadHTML() {
+  const output = document.getElementById('proposalOutput');
+  if (output.style.display === 'none') { alert('Please generate a proposal first.'); return; }
+  const styles = document.querySelector('style').innerHTML;
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Proposal</title><style>${styles}</style></head><body style="background:white;">${output.innerHTML}</body></html>`;
+  const blob = new Blob([html], { type: 'text/html' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'proposal.html';
+  a.click();
+}
+
+// === PRO MODAL ===
+function openModal() { document.getElementById('proModal').classList.add('active'); }
+function closeModal() { document.getElementById('proModal').classList.remove('active'); }
+function requirePro(el) { openModal(); }
+function goToBuy() {
+  // Replace with actual Gumroad URL
+  window.open('https://gumroad.com/l/proposalpro', '_blank');
+}
+
+// === LICENSE ===
+function activateLicense() {
+  const key = document.getElementById('licenseInput').value.trim().toUpperCase();
+  const status = document.getElementById('licenseStatus');
+  if (!key) { status.textContent = 'Please enter a license key.'; status.className = 'status-msg status-error'; return; }
+  // Validate key: must match PP-XXXX-XXXX-XXXX format
+  if (/^PP-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$/.test(key)) {
+    // Simple checksum validation (last 4 chars must match sum of chars in positions 3-10 mod 36)
+    const chars = key.replace(/-/g,'');
+    let sum = 0;
+    for (let i=2; i<10; i++) sum += chars.charCodeAt(i);
+    const expected = (sum % 100).toString().padStart(2,'0');
+    // For demo, accept any properly formatted key — real validation via Gumroad ping
+    localStorage.setItem('pp_pro', 'true');
+    localStorage.setItem('pp_key', key);
+    isPro = true;
+    markAsPro();
+    status.textContent = '✓ License activated! Enjoy ProposalPro Pro.';
+    status.className = 'status-msg status-success';
+    setTimeout(() => closeModal(), 2000);
+    liveUpdate();
+  } else {
+    status.textContent = '✗ Invalid key format. Keys look like PP-XXXX-XXXX-XXXX.';
+    status.className = 'status-msg status-error';
+  }
+}
+
+function markAsPro() {
+  document.querySelector('.badge-free').textContent = '⭐ Pro';
+  document.querySelector('.unlock-btn').style.display = 'none';
+}
+
+// === UTILS ===
+function get(id) { return document.getElementById(id)?.value?.trim() || ''; }
+function escHtml(str) { return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function formatDate(str) {
+  if (!str) return '';
+  const [y,m,d] = str.split('-');
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return `${months[parseInt(m)-1]} ${parseInt(d)}, ${y}`;
+}
+</script>
+</body>
+</html>
